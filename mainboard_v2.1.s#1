@@ -5404,8 +5404,7 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 -Rest of LCD circuitry on board (contrast pot, backlight dimmer pot!)
 -TX/RX LEDs
 -Debug lights?
--Turn ICSP connector 180 deg - check
--Add open source hardware logo</text>
+-Turn ICSP connector 180 deg - check</text>
 </plain>
 <instances>
 <instance part="U1" gate="G$1" x="66.04" y="53.34"/>
