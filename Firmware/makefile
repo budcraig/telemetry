@@ -39,11 +39,11 @@ MCU = atmega328p
 FORMAT = ihex
 
 # Target file name (without extension).
-TARGET = test_lcd
+TARGET = tc
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = $(TARGET).c lcd.c
+SRC = $(TARGET).c lcd.c uart.c
 
 
 # List Assembler source files here.
