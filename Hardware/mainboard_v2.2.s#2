@@ -10156,12 +10156,12 @@ Grid 5.00 mm&lt;p&gt;
 <part name="X1" library="con-wago-500" deviceset="W237-102" device=""/>
 <part name="12V2" library="SparkFun-Aesthetics" deviceset="VCC" device=""/>
 <part name="GND11" library="SparkFun-Aesthetics" deviceset="DGND" device=""/>
+<part name="LOGO1" library="SparkFun-Aesthetics" deviceset="OSHW-LOGO" device="M"/>
 <part name="H1" library="holes" deviceset="MOUNT-HOLE" device="3.2"/>
 <part name="H2" library="holes" deviceset="MOUNT-HOLE" device="3.2"/>
 <part name="H3" library="holes" deviceset="MOUNT-HOLE" device="3.2"/>
 <part name="H4" library="holes" deviceset="MOUNT-HOLE" device="3.2"/>
 <part name="S2" library="SparkFun-Electromechanical" deviceset="SWITCH-SPDT" device="PTH"/>
-<part name="LOGO2" library="SparkFun-Aesthetics" deviceset="OSHW-LOGO" device="L"/>
 </parts>
 <sheets>
 <sheet>
@@ -10244,12 +10244,12 @@ Grid 5.00 mm&lt;p&gt;
 <instance part="X1" gate="-2" x="116.84" y="-40.64"/>
 <instance part="12V2" gate="1" x="121.92" y="-27.94"/>
 <instance part="GND11" gate="G$1" x="124.46" y="-50.8"/>
+<instance part="LOGO1" gate="G$1" x="208.28" y="83.82"/>
 <instance part="H1" gate="G$1" x="220.98" y="58.42"/>
 <instance part="H2" gate="G$1" x="220.98" y="48.26"/>
 <instance part="H3" gate="G$1" x="220.98" y="43.18"/>
 <instance part="H4" gate="G$1" x="220.98" y="33.02"/>
 <instance part="S2" gate="1" x="213.36" y="-20.32"/>
-<instance part="LOGO2" gate="G$1" x="236.22" y="83.82"/>
 </instances>
 <busses>
 </busses>
@@ -10544,6 +10544,20 @@ Grid 5.00 mm&lt;p&gt;
 <pinref part="12V2" gate="1" pin="VCC"/>
 </segment>
 </net>
+<net name="TX" class="0">
+<segment>
+<pinref part="U1" gate="G$1" pin="PD1(TXD)"/>
+<wire x1="91.44" y1="53.34" x2="99.06" y2="53.34" width="0.1524" layer="91"/>
+<label x="93.98" y="53.34" size="1.778" layer="95"/>
+</segment>
+</net>
+<net name="RX" class="0">
+<segment>
+<pinref part="U1" gate="G$1" pin="PD0(RXD)"/>
+<wire x1="91.44" y1="55.88" x2="99.06" y2="55.88" width="0.1524" layer="91"/>
+<label x="93.98" y="55.88" size="1.778" layer="95"/>
+</segment>
+</net>
 <net name="ANEM_CLK" class="0">
 <segment>
 <pinref part="MASTHEAD" gate="G$1" pin="7"/>
@@ -10808,22 +10822,12 @@ Grid 5.00 mm&lt;p&gt;
 <wire x1="104.14" y1="0" x2="109.22" y2="0" width="0.1524" layer="91"/>
 <label x="109.22" y="0" size="1.778" layer="95"/>
 </segment>
-<segment>
-<pinref part="U1" gate="G$1" pin="PD1(TXD)"/>
-<wire x1="91.44" y1="53.34" x2="99.06" y2="53.34" width="0.1524" layer="91"/>
-<label x="93.98" y="53.34" size="1.778" layer="95"/>
-</segment>
 </net>
 <net name="URX" class="0">
 <segment>
 <pinref part="SERIAL_CELL" gate="G$1" pin="4"/>
 <wire x1="104.14" y1="-2.54" x2="109.22" y2="-2.54" width="0.1524" layer="91"/>
 <label x="109.22" y="-2.54" size="1.778" layer="95"/>
-</segment>
-<segment>
-<pinref part="U1" gate="G$1" pin="PD0(RXD)"/>
-<wire x1="91.44" y1="55.88" x2="99.06" y2="55.88" width="0.1524" layer="91"/>
-<label x="93.98" y="55.88" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="N$1" class="0">
@@ -10837,26 +10841,6 @@ Grid 5.00 mm&lt;p&gt;
 </nets>
 </sheet>
 </sheets>
-<errors>
-<approved hash="106,1,91.44,68.58,I2CD,,,,,"/>
-<approved hash="106,1,91.44,66.04,I2CL,,,,,"/>
-<approved hash="106,1,91.44,50.8,IRQ,,,,,"/>
-<approved hash="106,1,66.04,-38.1,N$13,,,,,"/>
-<approved hash="115,1,42.4392,50.8,Y1,,,,,"/>
-<approved hash="115,1,102.402,-2.34527,SERIAL_CELL,,,,,"/>
-<approved hash="115,1,104.14,47.7657,L4,,,,,"/>
-<approved hash="115,1,104.14,42.6857,L2,,,,,"/>
-<approved hash="115,1,104.14,40.1457,L3,,,,,"/>
-<approved hash="115,1,165.594,71.12,L6,,,,,"/>
-<approved hash="115,1,170.674,71.12,L7,,,,,"/>
-<approved hash="115,1,170.375,87.0373,SHUNT,,,,,"/>
-<approved hash="115,1,200.66,-24.9174,IC1,,,,,"/>
-<approved hash="115,1,236.542,-26.67,POWER,,,,,"/>
-<approved hash="115,1,63.5,1.03717,ICSP,,,,,"/>
-<approved hash="115,1,27.94,93.5905,S1,,,,,"/>
-<approved hash="115,1,118.552,-35.56,X1,,,,,"/>
-<approved hash="115,1,214.63,-21.5815,S2,,,,,"/>
-</errors>
 </schematic>
 </drawing>
 <compatibility>

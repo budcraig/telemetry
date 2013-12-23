@@ -10156,12 +10156,12 @@ Grid 5.00 mm&lt;p&gt;
 <part name="X1" library="con-wago-500" deviceset="W237-102" device=""/>
 <part name="12V2" library="SparkFun-Aesthetics" deviceset="VCC" device=""/>
 <part name="GND11" library="SparkFun-Aesthetics" deviceset="DGND" device=""/>
+<part name="LOGO1" library="SparkFun-Aesthetics" deviceset="OSHW-LOGO" device="M"/>
 <part name="H1" library="holes" deviceset="MOUNT-HOLE" device="3.2"/>
 <part name="H2" library="holes" deviceset="MOUNT-HOLE" device="3.2"/>
 <part name="H3" library="holes" deviceset="MOUNT-HOLE" device="3.2"/>
 <part name="H4" library="holes" deviceset="MOUNT-HOLE" device="3.2"/>
 <part name="S2" library="SparkFun-Electromechanical" deviceset="SWITCH-SPDT" device="PTH"/>
-<part name="LOGO2" library="SparkFun-Aesthetics" deviceset="OSHW-LOGO" device="L"/>
 </parts>
 <sheets>
 <sheet>
@@ -10244,12 +10244,12 @@ Grid 5.00 mm&lt;p&gt;
 <instance part="X1" gate="-2" x="116.84" y="-40.64"/>
 <instance part="12V2" gate="1" x="121.92" y="-27.94"/>
 <instance part="GND11" gate="G$1" x="124.46" y="-50.8"/>
+<instance part="LOGO1" gate="G$1" x="208.28" y="83.82"/>
 <instance part="H1" gate="G$1" x="220.98" y="58.42"/>
 <instance part="H2" gate="G$1" x="220.98" y="48.26"/>
 <instance part="H3" gate="G$1" x="220.98" y="43.18"/>
 <instance part="H4" gate="G$1" x="220.98" y="33.02"/>
 <instance part="S2" gate="1" x="213.36" y="-20.32"/>
-<instance part="LOGO2" gate="G$1" x="236.22" y="83.82"/>
 </instances>
 <busses>
 </busses>
