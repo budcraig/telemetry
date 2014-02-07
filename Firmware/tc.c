@@ -11,13 +11,20 @@
 #define UART_BAUD_RATE      9600  
 
 volatile int time_click = 0;
+int x2=0;
 int secs =0;
 char buffer[17]  = "its alive!";
+volatile uint16_t adc_value = 0;
+volatile uint8_t ADClow = 0;
+
+void adc_setup(void);
+
+/*WINDSPEED CALCULATIONS ARE IN ADC.C in ADCPWM FOLDER*/
 
 
 int main(void)
 {
-		/*
+		
 		TCCR0A |= (1 << WGM01); //Timer0 to CTC mode
 		OCR0A = 250; //Vale Timer0 counts to
 		TIMSK0 |= (1 << OCIE0A);    //Enable COMPA interrupt
@@ -29,21 +36,44 @@ int main(void)
 		uint8_t time_click2=0;
 		
 		lcd_init(LCD_DISP_ON); //Initialize LCD
-		*/
+		
 		uart_init( UART_BAUD_SELECT(UART_BAUD_RATE,F_CPU) );  //Setup UART IO pins and defaults
 		
-        //lcd_clrscr(); // clear display and home cursor  
-        //lcd_puts("Line1 \n"); //Write to LCD
+        lcd_clrscr(); // clear display and home cursor  
+        //lcd_puts("Starting"); //Write to LCD
 		
+		adc_setup();
+		lcd_gotoxy(0,0);
 		sei();
 		
 		while (1) //Endless loop
 		{
 		
+			if((ADCSRA & (1<<ADSC))!=1){
+			x++;
+			}
+			
+			if(x==240){x2++;x=0;}
+			
+			if(x2==100){
+			ADClow = ADCL;
+			adc_value = ADCH<<2 | ADClow >> 6;
+			itoa(adc_value, buffer, 10);
+			lcd_gotoxy(0,0);
+			if(adc_value<100){lcd_puts("0");}
+			lcd_puts(buffer);
+			x2=0;
+			ADCSRA |= (1 << ADSC);
+			}
+		
+		
+			/*
 			for(int i=0; i<12;i++){
-			uart_puts(buffer);
+			lcd_puts(buffer);
+			//lcd_puts("g");
 			_delay_ms(500);
 			}
+			*/
 		
 			/*
 			if(time_click>=250){ //Watch for 125 interrupts
@@ -88,5 +118,15 @@ ISR (TIMER0_COMPA_vect)  // timer0 overflow interrupt
 
   		time_click++;
 
+}
+
+void adc_setup(){
+
+	ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // Set ADC prescalar to 128 - 125KHz sample rate @ 16MHz
+	ADMUX |= (1 << REFS0); // Set ADC reference to AVCC
+	ADCSRA |= (1 << ADEN);  // Enable ADC
+	ADCSRA |= (1 << ADSC);  // Start first A2D Conversion
+	ADMUX |= (1<<MUX2) | (1<<MUX1);
+	ADMUX |= (1<<ADLAR); 
 }
 
