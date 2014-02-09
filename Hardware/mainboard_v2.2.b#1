@@ -8,9 +8,9 @@
 </settings>
 <grid distance="0.05" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.001" altunitdist="inch" altunit="inch"/>
 <layers>
-<layer number="1" name="Top" color="4" fill="1" visible="no" active="yes"/>
-<layer number="16" name="Bottom" color="1" fill="1" visible="no" active="yes"/>
-<layer number="17" name="Pads" color="2" fill="1" visible="no" active="yes"/>
+<layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
+<layer number="16" name="Bottom" color="1" fill="1" visible="yes" active="yes"/>
+<layer number="17" name="Pads" color="2" fill="1" visible="yes" active="yes"/>
 <layer number="18" name="Vias" color="2" fill="1" visible="yes" active="yes"/>
 <layer number="19" name="Unrouted" color="6" fill="1" visible="no" active="yes"/>
 <layer number="20" name="Dimension" color="15" fill="1" visible="yes" active="yes"/>
@@ -111,6 +111,11 @@
 <wire x1="0" y1="50.8" x2="0" y2="0" width="0" layer="28"/>
 <rectangle x1="38.1254" y1="49.8348" x2="40.259" y2="50.2666" layer="25"/>
 <text x="42.9514" y="32.4104" size="1.778" layer="26" rot="MR0">Telemetry v2.2</text>
+<text x="1.27" y="66.04" size="1.778" layer="1">- GND under micro not connected to anything
+- RST and MISO reversed
+- Differnet footprint for slide switch
+- Need cap on AREF - figure value
+- 12, 5, gnd test points</text>
 </plain>
 <libraries>
 <library name="SparkFun-DigitalIC">
@@ -1632,16 +1637,12 @@ design rules under a new name.</description>
 <wire x1="11.56" y1="14.1" x2="15.875" y2="14.1" width="0.4064" layer="1"/>
 </signal>
 </signals>
-<errors>
-<approved hash="4,1,01fa3a5d25ef1fce"/>
-<approved hash="4,1,41fcfa4565895fce"/>
-<approved hash="4,1,7b2ef180eee971b4"/>
-<approved hash="4,1,99685a1b749955ea"/>
-<approved hash="4,16,01fa3a5d25ef1fce"/>
-<approved hash="4,16,41fcfa4565895fce"/>
-<approved hash="4,16,7b2ef180eee971b4"/>
-<approved hash="4,16,99685a1b749955ea"/>
-</errors>
 </board>
 </drawing>
+<compatibility>
+<note version="6.3" minversion="6.2.2" severity="warning">
+Since Version 6.2.2 text objects can contain more than one line,
+which will not be processed correctly with this version.
+</note>
+</compatibility>
 </eagle>

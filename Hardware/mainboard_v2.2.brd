@@ -112,7 +112,12 @@
 <rectangle x1="38.1254" y1="49.8348" x2="40.259" y2="50.2666" layer="25"/>
 <text x="42.9514" y="32.4104" size="1.778" layer="26" rot="MR0">Telemetry v2.2</text>
 <text x="1.27" y="66.04" size="1.778" layer="1">- GND under micro not connected to anything
-- RST and MISO reversed</text>
+- RST and MISO reversed
+- Differnet footprint for slide switch
+- Need cap on AREF - figure value
+- Wind dir needs routed to an ADC pin
+- 5-12v select jumper on masthead connector
+- 12, 5, gnd test points</text>
 </plain>
 <libraries>
 <library name="SparkFun-DigitalIC">
@@ -1502,7 +1507,7 @@ design rules under a new name.</description>
 <wire x1="36.449" y1="23.876" x2="35.687" y2="24.638" width="0.2032" layer="16"/>
 <via x="35.687" y="24.638" extent="1-16" drill="0.6" shape="octagon"/>
 <wire x1="32.5628" y1="23.8252" x2="27.813" y2="28.575" width="0.1524" layer="1"/>
-<wire x1="27.813" y1="28.575" x2="27.94" y2="32.12" width="0.2032" layer="1"/>
+<wire x1="27.94" y1="32.12" x2="27.813" y2="28.575" width="0.2032" layer="1"/>
 <wire x1="32.5628" y1="23.8252" x2="34.4424" y2="23.8252" width="0.1524" layer="1"/>
 <wire x1="34.4424" y1="23.8252" x2="35.0266" y2="24.4094" width="0.1524" layer="1"/>
 <wire x1="35.0266" y1="24.4094" x2="35.4584" y2="24.4094" width="0.1524" layer="1"/>

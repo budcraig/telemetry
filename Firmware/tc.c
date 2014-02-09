@@ -16,7 +16,7 @@ int secs =0;
 char buffer[17]  = "its alive!";
 volatile uint16_t adc_value = 0;
 volatile uint8_t ADClow = 0;
-
+float volts = 0;
 void adc_setup(void);
 
 /*WINDSPEED CALCULATIONS ARE IN ADC.C in ADCPWM FOLDER*/
@@ -42,28 +42,31 @@ int main(void)
         lcd_clrscr(); // clear display and home cursor  
         //lcd_puts("Starting"); //Write to LCD
 		
-		adc_setup();
-		lcd_gotoxy(0,0);
-		sei();
+		adc_setup(); //Set up ADC
+		lcd_gotoxy(0,0); 
+		sei();	//Enable global interrupts
 		
 		while (1) //Endless loop
 		{
 		
-			if((ADCSRA & (1<<ADSC))!=1){
+			if((ADCSRA & (1<<ADSC))!=1){ //ADC conversion completed
 			x++;
 			}
 			
-			if(x==240){x2++;x=0;}
+			if(x==255){x2++;x=0;}
 			
-			if(x2==100){
+			if(x2==255){
 			ADClow = ADCL;
 			adc_value = ADCH<<2 | ADClow >> 6;
-			itoa(adc_value, buffer, 10);
-			lcd_gotoxy(0,0);
+			volts = adc_value * 0.0455;	//0.0455 calculated transfer function from adc to volts: 5 volts / 1024 bit precision * (11.2/1.2) voltage divider ratio 
+			dtostrf(volts,3,1,buffer); //Converts volts float to string in buffer. 3 digits, 1 decimal minimum
+			lcd_gotoxy(0,0);			//Output to screen
 			if(adc_value<100){lcd_puts("0");}
 			lcd_puts(buffer);
+			lcd_gotoxy(4,0);
+			lcd_puts("V");
 			x2=0;
-			ADCSRA |= (1 << ADSC);
+			ADCSRA |= (1 << ADSC);	//Go next ADC conversion
 			}
 		
 		
