@@ -18,22 +18,63 @@ volatile uint16_t adc_value = 0;
 volatile uint8_t ADClow = 0;
 float volts = 0;
 void adc_setup(void);
+int anem_counts = 0;
 
-/*WINDSPEED CALCULATIONS ARE IN ADC.C in ADCPWM FOLDER*/
+//-----Windspeed variables ----//
+void start_windspeed( void); 		//Function to request an anemometer reading
+volatile float freq = 0; 	    //
+volatile char aws[6] = " kts";
+volatile uint8_t flag = 0;      //Flag so computer doesn't try to initate a windspeed reading in the middle of another one
+volatile float time = 65535;
+volatile uint8_t edges = 10;     //Number of edges T0 will be looking for
+volatile char revstring[16] = "255";	//char array to put #of revolutions as ascii
+void calc_windspeed( void );
+//-----------------------------//
 
+void calc_windspeed(){
+	TCCR0B &= ~(1<<CS02)|~(1<<CS01)|~(1<<CS00); //Stop timer0
+	TCCR1B &= ~(1<<CS12)|~(1<<CS10)|~(1<<CS11); //Stop timer1
+
+	time = TCNT1; //Number of counts that timer1 passed during measurement period
+	   
+	//Add 16 bits if timer1 ran over, and lower number of req'd counts
+	if(TIFR1 & (1<<TOV1)){
+    time=time+65535.0;
+    if((time>15625) && (edges>2)){edges--;}
+	TIFR1 = (1<<TOV1);
+    }
+    
+    if(time<46875 && edges<150){edges++;}
+	
+	time = time/15625.0; //time into seconds
+  
+    freq = TCNT0/time;
+
+    //Factory stated transfer function is 0.765 m/s/Hz
+	freq = freq*1.48;	//Convert from Hz to kts
+	
+    dtostrf(freq,3,1,revstring);
+    
+    lcd_gotoxy(5,1);
+    lcd_puts(revstring);
+    lcd_puts(aws);
+
+    
+	TCNT0=0;
+	flag=0; //Unlock windspeed request
+    
+    }
 
 int main(void)
 {
-		
-		TCCR0A |= (1 << WGM01); //Timer0 to CTC mode
-		OCR0A = 250; //Vale Timer0 counts to
-		TIMSK0 |= (1 << OCIE0A);    //Enable COMPA interrupt
 		sei();         //enable Global interrupts
 		TCCR0B |= (1 << CS02) | (1<<CS00); // set 1/1024 prescale and start the timer
 		
 		uint8_t x = 0;
-		uint8_t line = 0;
-		uint8_t time_click2=0;
+		
+		OCR1A = 0x10; //Number of edges (half rotations) to watch for
+		TIMSK0 |= (1<<OCIE0A); // Interrupt at OCR0A match
+		TIMSK1 |= (1<<OCIE1A); //interrupt at OCR1A match
 		
 		lcd_init(LCD_DISP_ON); //Initialize LCD
 		
@@ -67,60 +108,60 @@ int main(void)
 			lcd_puts("V");
 			x2=0;
 			ADCSRA |= (1 << ADSC);	//Go next ADC conversion
+			
+			
+			if(flag==0){start_windspeed();}
 			}
-		
-		
-			/*
-			for(int i=0; i<12;i++){
-			lcd_puts(buffer);
-			//lcd_puts("g");
-			_delay_ms(500);
-			}
-			*/
-		
-			/*
-			if(time_click>=250){ //Watch for 125 interrupts
-			time_click2++;
-			time_click=0;
-			line++;
-			
-			if(line==2){printf("AT\r");}	//Check that phone is alive. Response should be 'OK'
-			if(line==3){printf("AT+cmgf=1\r");} //Tell phone to expect SMS message. Response 'OK'
-			if(line==4){printf("AT+cmgs=\"8143237541\"\r");} //Set destination address
-			if(line==5){
-				printf("message generated and sent by avr. reply to iphone.\x1A\r"); //Set message. CTRL-Z to finish input
-				}
-				
-			if(line>7){printf("AT\r");} //Repeat 'phone is alive' commands
-
-			}
-			*/
-			/*
-			secs++;
-			lcd_gotoxy(0,1); 	
-			lcd_puts(itoa(secs, seconds, 10));
-			time_click=0;
-			x++;
-			//printf("Test it! x = %d", x);	
-			printf("AT\n");
-			*/
-			
-			
-			
-		
-
-		
+	
 		}
 		
 		
 		
 }
-		
+
+void start_windspeed(){ //read anemometer
+	
+    OCR0A = edges;
+	lcd_gotoxy(0,1);
+	lcd_puts("AWS:");
+	
+	/*
+	printf("windspeed requested\n");
+    printf("looking for ");
+    printf(itoa(edges, buffer, 10));
+    printf(" edges\n");
+	*/
+	
+	TCNT0 = 0; //Clear timer0
+	TCNT1 = 0; //Clear timer1
+
+	TCCR0B |= (1<<CS02)|(1<<CS01)|(1<<CS00); //Start timer0 on external source, rising edge, T0 pin
+	TCCR1B |= (1<<CS12)|(1<<CS10); //Start timer1 on systemclock/1024
+	flag=1;//Lock windspeed request
+
+	}
+	
+ISR (PCINT2_vect){
+anem_counts++;
+}
+
+
+	
+ISR(TIMER1_COMPA_vect){
+
+    if(TIFR1 & (1<<TOV1)){
+        TCCR0B &= ~(1<<CS02)|~(1<<CS01)|~(1<<CS00); //Stop timer0
+        TCCR1B &= ~(1<<CS12)|~(1<<CS10)|~(1<<CS11); //Stop timer1
+        
+        calc_windspeed();
+        
+        TIFR1=(1<<TOV1);
+		}
+    }
+	
 ISR (TIMER0_COMPA_vect)  // timer0 overflow interrupt
 {
-
-  		time_click++;
-
+    calc_windspeed();
 }
 
 void adc_setup(){
