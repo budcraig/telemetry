@@ -1,11 +1,140 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 #include "lcd.h"
 #include "uart.h"
+#include "ds18x20lib.h"
 #define F_CPU 16000000UL
+
+//DS18B20 stuff
+#define LOOP_CYCLES 8
+#define us(num) ((5+num)/(LOOP_CYCLES*(1/(F_CPU/1000000.0))))
+
+#define THERM_PORT PORTD
+#define THERM_DDR DDRD
+#define THERM_PIN PIND
+#define THERM_DQ PD7
+
+#define THERM_CMD_CONVERTTEMP 0x44
+#define THERM_CMD_RSCRATCHPAD 0xbe
+#define THERM_CMD_WSCRATCHPAD 0x4e
+#define THERM_CMD_CPYSCRATCHPAD 0x48
+#define THERM_CMD_RECEEPROM 0xb8
+#define THERM_CMD_RPWRSUPPLY 0xb4
+#define THERM_CMD_SEARCHROM 0xf0
+#define THERM_CMD_READROM 0x33
+#define THERM_CMD_MATCHROM 0x55
+#define THERM_CMD_SKIPROM 0xCC
+#define THERM_CMD_ALARMSEARCH 0xec
+
+#define THERM_INPUT_MODE() THERM_DDR&=~(1<<THERM_DQ)
+#define THERM_OUTPUT_MODE()	THERM_DDR|=(1<<THERM_DQ)
+#define THERM_LOW()	THERM_PORT&=~(1<<THERM_DQ)
+#define THERM_HIGH()	THERM_PORT|=(1<<THERM_DQ)
+
+#define THERM_DECIMAL_STEPS_12BIT 625 //.0625
+
+inline __attribute__ ((gnu_inline)) void therm_delay(uint16_t delay){while(delay--) asm volatile("nop");}
+
+uint8_t therm_reset(){
+	uint8_t i;
+	//Pull line low and wait for 480us
+	THERM_LOW();
+	THERM_OUTPUT_MODE();
+	therm_delay(us(480));
+	
+	//Release line and wait for 60us
+	THERM_INPUT_MODE();
+	therm_delay(us(60));
+	
+	//Store line value and wait until 480us over
+	i=(THERM_PIN & (1<<THERM_DQ));
+	therm_delay(us(420));
+	
+	//Return. 1 is error, 0 is okay
+	return i;
+}
+
+void therm_write_bit(uint8_t bit){
+	//Pull line low for 1uS
+	THERM_LOW();
+	THERM_OUTPUT_MODE();
+	therm_delay(us(1));
+	//If we want to write 1, release the line (if not will keep low)
+	if(bit) THERM_INPUT_MODE();
+	//Wait for 60uS and release the line
+	therm_delay(us(60));
+	THERM_INPUT_MODE();
+}
+
+uint8_t therm_read_bit(void){
+	uint8_t bit=0;
+	//Pull line low for 1uS
+	THERM_LOW();
+	THERM_OUTPUT_MODE();
+	therm_delay(us(1));
+	//Release line and wait for 14uS
+	THERM_INPUT_MODE();
+	therm_delay(us(14));
+	//Read line value
+	if(THERM_PIN&(1<<THERM_DQ)) bit=1;
+	//Wait for 45uS to end and return read value
+	therm_delay(us(45));
+	return bit;
+}
+
+void therm_write_byte(uint8_t byte){
+	uint8_t i=8;
+	while(i--){
+	//Write actual bit and shift one position right to make
+//	the next bit ready
+	therm_write_bit(byte&1);
+	byte>>=1;
+	}
+}
+
+uint8_t therm_read_byte(void){
+	uint8_t i=8, n=0;
+	while(i--){
+	//Shift one position right and store read value
+	n>>=1;
+	n|=(therm_read_bit()<<7);
+	}
+	return n;
+}
+
+
+void therm_read_temperature(char *buffer){
+	// Buffer length must be at least 12bytes long! ["+XXX.XXXX C"]
+	uint8_t temperature[2];
+	int8_t digit;
+	uint16_t decimal;
+	//Reset, skip ROM and start temperature conversion
+	therm_reset();
+	therm_write_byte(THERM_CMD_SKIPROM);
+	therm_write_byte(THERM_CMD_CONVERTTEMP);
+	//Wait until conversion is complete
+	while(!therm_read_bit());
+	//Reset, skip ROM and send command to read Scratchpad
+	therm_reset();
+	therm_write_byte(THERM_CMD_SKIPROM);
+	therm_write_byte(THERM_CMD_RSCRATCHPAD);
+	//Read Scratchpad (only 2 first bytes)
+	temperature[0]=therm_read_byte();
+	temperature[1]=therm_read_byte();
+	therm_reset();
+	//Store temperature integer digits and decimal digits
+	digit=temperature[0]>>4;
+	digit|=(temperature[1]&0x7)<<4;
+	//Store decimal digits
+	decimal=temperature[0]&0xf;
+	decimal*=THERM_DECIMAL_STEPS_12BIT;
+	//Format temperature into a string [+XXX.XXXX C]
+	sprintf(buffer, "%+d.%04u C", digit, decimal);
+}
 
 /* 9600 baud */
 #define UART_BAUD_RATE      9600  
@@ -19,6 +148,8 @@ volatile uint8_t ADClow = 0;
 float volts = 0;
 void adc_setup(void);
 int anem_counts = 0;
+volatile float temperature = 55;
+uint8_t error = 0;
 
 //-----Windspeed variables ----//
 void start_windspeed( void); 		//Function to request an anemometer reading
@@ -30,6 +161,10 @@ volatile uint8_t edges = 10;     //Number of edges T0 will be looking for
 volatile char revstring[16] = "255";	//char array to put #of revolutions as ascii
 void calc_windspeed( void );
 //-----------------------------//
+
+
+
+
 
 void calc_windspeed(){
 	TCCR0B &= ~(1<<CS02)|~(1<<CS01)|~(1<<CS00); //Stop timer0
@@ -84,6 +219,7 @@ int main(void)
         //lcd_puts("Starting"); //Write to LCD
 		
 		adc_setup(); //Set up ADC
+		
 		lcd_gotoxy(0,0); 
 		sei();	//Enable global interrupts
 		
@@ -96,7 +232,7 @@ int main(void)
 			
 			if(x==255){x2++;x=0;}
 			
-			if(x2==255){
+			if(x2==1500){
 			ADClow = ADCL;
 			adc_value = ADCH<<2 | ADClow >> 6;
 			volts = adc_value * 0.0455;	//0.0455 calculated transfer function from adc to volts: 5 volts / 1024 bit precision * (11.2/1.2) voltage divider ratio 
@@ -109,8 +245,22 @@ int main(void)
 			x2=0;
 			ADCSRA |= (1 << ADSC);	//Go next ADC conversion
 			
+			therm_read_temperature(buffer);
+			//temperature = ds1820_read_temp(DS1820_1_pin);
+			//dtostrf(temperature,3,1,buffer);
+			lcd_gotoxy(6,0);
+			/*error = ds1820_reset(DS1820_1_pin);
+			if(error==0){lcd_puts("RST!");}
+			if(error==1){lcd_puts("111");}
+			if(error==2){lcd_puts("222");}*/
+			lcd_puts(buffer);
+			lcd_puts("C");
+
+			
 			
 			if(flag==0){start_windspeed();}
+			
+			
 			}
 	
 		}
@@ -159,8 +309,7 @@ ISR(TIMER1_COMPA_vect){
 		}
     }
 	
-ISR (TIMER0_COMPA_vect)  // timer0 overflow interrupt
-{
+ISR (TIMER0_COMPA_vect){  // timer0 overflow interrupt
     calc_windspeed();
 }
 
