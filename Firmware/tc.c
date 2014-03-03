@@ -6,7 +6,6 @@
 #include <util/delay.h>
 #include "lcd.h"
 #include "uart.h"
-#include "ds18x20lib.h"
 #define F_CPU 16000000UL
 
 //DS18B20 stuff
@@ -38,6 +37,8 @@
 #define THERM_DECIMAL_STEPS_12BIT 625 //.0625
 
 inline __attribute__ ((gnu_inline)) void therm_delay(uint16_t delay){while(delay--) asm volatile("nop");}
+volatile uint16_t therm_step = 0;
+volatile uint8_t therm_flag = 0;
 
 uint8_t therm_reset(){
 	uint8_t i;
@@ -106,18 +107,24 @@ uint8_t therm_read_byte(void){
 	return n;
 }
 
-
-void therm_read_temperature(char *buffer){
-	// Buffer length must be at least 12bytes long! ["+XXX.XXXX C"]
-	uint8_t temperature[2];
-	int8_t digit;
-	uint16_t decimal;
+void therm_start_temperature( void ){
+//Call this function first, will start temperature conversion then set 700ms timer & release uC	
 	//Reset, skip ROM and start temperature conversion
 	therm_reset();
 	therm_write_byte(THERM_CMD_SKIPROM);
 	therm_write_byte(THERM_CMD_CONVERTTEMP);
+	therm_step=0;
+	therm_flag=1;
 	//Wait until conversion is complete
-	while(!therm_read_bit());
+}
+void therm_read_temperature(char *buffer){
+	//while(!therm_read_bit());
+//This will be called 700mS after start_temperature to read and return temp
+// Buffer length must be at least 12bytes long! ["+XXX.XXXX C"]
+	uint8_t temperature[2];
+	int8_t digit;
+	uint16_t decimal;
+
 	//Reset, skip ROM and send command to read Scratchpad
 	therm_reset();
 	therm_write_byte(THERM_CMD_SKIPROM);
@@ -133,8 +140,11 @@ void therm_read_temperature(char *buffer){
 	decimal=temperature[0]&0xf;
 	decimal*=THERM_DECIMAL_STEPS_12BIT;
 	//Format temperature into a string [+XXX.XXXX C]
-	sprintf(buffer, "%+d.%04u C", digit, decimal);
-}
+	//sprintf(buffer, "%+d.%04u C", digit, decimal);
+	//Format temperature into string [xxC] with no decimals
+	sprintf(buffer, "%d%", digit, decimal);
+
+}	
 
 /* 9600 baud */
 #define UART_BAUD_RATE      9600  
@@ -161,9 +171,6 @@ volatile uint8_t edges = 10;     //Number of edges T0 will be looking for
 volatile char revstring[16] = "255";	//char array to put #of revolutions as ascii
 void calc_windspeed( void );
 //-----------------------------//
-
-
-
 
 
 void calc_windspeed(){
@@ -202,14 +209,16 @@ void calc_windspeed(){
 
 int main(void)
 {
-		sei();         //enable Global interrupts
-		TCCR0B |= (1 << CS02) | (1<<CS00); // set 1/1024 prescale and start the timer
+		
+		TCCR0B |= (1 << CS02) | (1<<CS00); // set 1/1024 prescale and start timer0
+		TCCR2B |= (1 << CS22) | (1<<CS21); //Start timer2 with no prescaler (overflow interrupt every 16uS
 		
 		uint8_t x = 0;
-		
+		sei();         //enable Global interrupts
 		OCR1A = 0x10; //Number of edges (half rotations) to watch for
 		TIMSK0 |= (1<<OCIE0A); // Interrupt at OCR0A match
 		TIMSK1 |= (1<<OCIE1A); //interrupt at OCR1A match
+		TIMSK2 |= (1<<TOIE2); //Timer2 overflow interrupt
 		
 		lcd_init(LCD_DISP_ON); //Initialize LCD
 		
@@ -245,16 +254,22 @@ int main(void)
 			x2=0;
 			ADCSRA |= (1 << ADSC);	//Go next ADC conversion
 			
-			therm_read_temperature(buffer);
+			if(therm_flag==0){therm_start_temperature();}
+			if(therm_flag==1 && therm_step>=171){
+				therm_flag=0;
+				therm_step=0;
+				therm_read_temperature(buffer);
+				lcd_gotoxy(6,0);		
+				lcd_puts(buffer);
+				lcd_puts("C");
+			}
 			//temperature = ds1820_read_temp(DS1820_1_pin);
 			//dtostrf(temperature,3,1,buffer);
-			lcd_gotoxy(6,0);
 			/*error = ds1820_reset(DS1820_1_pin);
 			if(error==0){lcd_puts("RST!");}
 			if(error==1){lcd_puts("111");}
 			if(error==2){lcd_puts("222");}*/
-			lcd_puts(buffer);
-			lcd_puts("C");
+
 
 			
 			
@@ -291,8 +306,8 @@ void start_windspeed(){ //read anemometer
 
 	}
 	
-ISR (PCINT2_vect){
-anem_counts++;
+ISR (PCINT2_vect){//Pin change interrupt fires when anemometer sensor changes states
+anem_counts++;//Increment number of times interrupt has fired
 }
 
 
@@ -304,7 +319,6 @@ ISR(TIMER1_COMPA_vect){
         TCCR1B &= ~(1<<CS12)|~(1<<CS10)|~(1<<CS11); //Stop timer1
         
         calc_windspeed();
-        
         TIFR1=(1<<TOV1);
 		}
     }
@@ -313,6 +327,14 @@ ISR (TIMER0_COMPA_vect){  // timer0 overflow interrupt
     calc_windspeed();
 }
 
+ISR (TIMER2_OVF_vect){
+	if(therm_flag==1){
+	//lcd_puts("V");
+	therm_step++;
+	}
+	
+
+}
 void adc_setup(){
 
 	ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // Set ADC prescalar to 128 - 125KHz sample rate @ 16MHz
