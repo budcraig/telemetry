@@ -485,6 +485,8 @@ unsigned int uart_getc(void)
 }/* uart_getc */
 
 
+
+
 /*************************************************************************
 Function: uart_putc()
 Purpose:  write byte to ringbuffer for transmitting via UART
